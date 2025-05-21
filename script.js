@@ -13,21 +13,14 @@ let currentDownload = {
     isPending: false,
     activeChunks: new Set(),
     fileType: null,
-    serverInfo: null
-};
-
-function toggleAdvancedOptions() {
-    const options = document.getElementById('advancedOptions');
-    const toggle = document.getElementById('optionsToggle');
-    
-    if (options.style.display === 'none' || options.style.display === '') {
-        options.style.display = 'block';
-        toggle.textContent = '▲';
-    } else {
-        options.style.display = 'none';
-        toggle.textContent = '▼';
+    serverInfo: null,
+    downloadConfig: {
+        useChunks: true,
+        chunkSize: 5, // MB
+        concurrentChunks: 3,
+        useHttp3: true
     }
-}
+};
 
 function formatSize(bytes) {
     if (bytes === 0) return '0 B';
@@ -95,6 +88,59 @@ function guessFileType(filename, contentType) {
     return 'File không xác định';
 }
 
+// New function to detect network speed and optimize download settings
+async function detectNetworkCapabilities() {
+    try {
+        // Test connection with a small download to estimate speed
+        const testStartTime = Date.now();
+        const testResponse = await fetch('/proxy?url=' + encodeURIComponent('https://www.cloudflare.com/favicon.ico'));
+        const testData = await testResponse.arrayBuffer();
+        const testEndTime = Date.now();
+        
+        // Calculate speed in MB/s (approximate)
+        const testDuration = (testEndTime - testStartTime) / 1000;
+        const testSize = testData.byteLength;
+        const speedMBps = (testSize / 1024 / 1024) / testDuration;
+        
+        // Configure download settings based on speed
+        const config = {
+            useChunks: true,
+            useHttp3: true
+        };
+        
+        // Adjust chunk size and concurrency based on network speed
+        if (speedMBps < 1) { // Slow connection (< 1 MB/s)
+            config.chunkSize = 2;
+            config.concurrentChunks = 2;
+        } else if (speedMBps < 5) { // Medium connection (1-5 MB/s)
+            config.chunkSize = 5;
+            config.concurrentChunks = 3;
+        } else if (speedMBps < 20) { // Fast connection (5-20 MB/s)
+            config.chunkSize = 8;
+            config.concurrentChunks = 4;
+        } else { // Very fast connection (> 20 MB/s)
+            config.chunkSize = 10;
+            config.concurrentChunks = 6;
+        }
+        
+        // If connection is extremely slow, disable chunking
+        if (speedMBps < 0.3) {
+            config.useChunks = false;
+        }
+        
+        return config;
+    } catch (error) {
+        console.error('Error detecting network capabilities:', error);
+        // Return default settings in case of error
+        return {
+            useChunks: true,
+            chunkSize: 5,
+            concurrentChunks: 3,
+            useHttp3: true
+        };
+    }
+}
+
 function updateDownloadInfo() {
     if (!currentDownload.fileName) return;
     
@@ -103,10 +149,13 @@ function updateDownloadInfo() {
     document.getElementById('startTime').textContent = currentDownload.startTime ? 
         formatDate(currentDownload.startTime) : 'Chưa bắt đầu';
     
-    if (currentDownload.chunkStatus && currentDownload.chunkStatus.length > 0) {
-        const completedChunks = currentDownload.chunkStatus.filter(status => status === 'complete').length;
-        document.getElementById('chunksProgress').textContent = `${completedChunks}/${currentDownload.chunkStatus.length}`;
-    }
+    const config = currentDownload.downloadConfig;
+    let configText = config.useChunks 
+        ? `Tải theo chunks (${config.chunkSize}MB × ${config.concurrentChunks} luồng)`
+        : 'Tải trực tiếp';
+    configText += config.useHttp3 ? ', HTTP/3' : ', HTTP/2';
+    
+    document.getElementById('downloadConfig').textContent = configText;
 }
 
 async function downloadChunk(url, start, end, chunkIndex, onProgress) {
@@ -251,7 +300,6 @@ async function downloadWithChunks(url, contentLength, chunkSizeMB, concurrentChu
     
     // Create array of promise-returning functions with progress tracking
     const downloadFunctions = [];
-    let totalReceivedBytes = 0;
     
     for (let i = 0; i < numChunks; i++) {
         const start = i * chunkSize;
@@ -365,20 +413,22 @@ async function resumeDownload() {
     const elapsedMs = Date.now() - currentDownload.startTime.getTime();
     currentDownload.startTime = new Date(Date.now() - elapsedMs);
     
-    // Resume download
-    const chunkSizeMB = parseInt(document.getElementById('chunkSize').value) || 5;
-    const concurrentChunks = parseInt(document.getElementById('concurrentChunks').value) || 3;
-    
+    // Resume download using current configuration
     try {
         // Start from scratch with the same parameters
         const url = currentDownload.url;
-        const useHttp3 = document.getElementById('useHttp3').checked;
         const encoded = encodeURIComponent(url);
-        const proxyUrl = `/proxy?url=${encoded}&http3=${useHttp3}`;
+        const config = currentDownload.downloadConfig;
+        const proxyUrl = `/proxy?url=${encoded}&http3=${config.useHttp3}`;
         
         // Note: in a real implementation, we would track which chunks were completed
         // and only download the missing ones. This simplification restarts the download.
-        const blobUrl = await downloadWithChunks(proxyUrl, currentDownload.contentLength, chunkSizeMB, concurrentChunks);
+        const blobUrl = await downloadWithChunks(
+            proxyUrl, 
+            currentDownload.contentLength, 
+            config.chunkSize, 
+            config.concurrentChunks
+        );
         
         if (blobUrl) {
             currentDownload.blobUrl = blobUrl;
@@ -436,11 +486,14 @@ function cancelDownload() {
         isPending: false,
         activeChunks: new Set(),
         fileType: null,
-        serverInfo: null
+        serverInfo: null,
+        downloadConfig: {
+            useChunks: true,
+            chunkSize: 5,
+            concurrentChunks: 3,
+            useHttp3: true
+        }
     };
-    
-    // Optionally hide the download card
-    // document.getElementById('downloadCard').style.display = 'none';
 }
 
 function saveDownload() {
@@ -487,22 +540,26 @@ async function startDownload() {
     document.getElementById('fileType').textContent = '...';
     document.getElementById('serverInfo').textContent = '...';
     document.getElementById('startTime').textContent = '...';
-    document.getElementById('chunksProgress').textContent = '0/0';
+    document.getElementById('downloadConfig').textContent = 'Đang phân tích...';
     document.getElementById('pauseButton').disabled = false;
     document.getElementById('resumeButton').disabled = true;
     document.getElementById('saveButton').disabled = true;
 
-    // Initialize download state
-    currentDownload.url = url;
-    currentDownload.startTime = new Date();
-    currentDownload.isPaused = false;
-    currentDownload.receivedBytes = 0;
-    
-    const encoded = encodeURIComponent(url);
-    const useHttp3 = document.getElementById('useHttp3').checked;
-    const proxyUrl = `/proxy?url=${encoded}&http3=${useHttp3}`;
-
     try {
+        // Detect network capabilities and optimize download settings
+        const networkConfig = await detectNetworkCapabilities();
+        
+        // Initialize download state
+        currentDownload.url = url;
+        currentDownload.startTime = new Date();
+        currentDownload.isPaused = false;
+        currentDownload.receivedBytes = 0;
+        currentDownload.downloadConfig = networkConfig;
+        
+        const encoded = encodeURIComponent(url);
+        const useHttp3 = networkConfig.useHttp3;
+        const proxyUrl = `/proxy?url=${encoded}&http3=${useHttp3}`;
+
         // Get file information
         const response = await fetch(proxyUrl, { method: 'HEAD' });
         
@@ -524,35 +581,40 @@ async function startDownload() {
         
         updateDownloadInfo();
 
-        // Determine download method
-        const useChunkedDownload = document.getElementById('chunkDownload').checked && 
-                                   contentLength > 5 * 1024 * 1024; // Only use chunks for files > 5MB
-        
-        // Removed startImmediately check
+        // Determine if we should use chunked download based on file size and network capabilities
+        const useChunkedDownload = networkConfig.useChunks && contentLength > 5 * 1024 * 1024; // Only use chunks for files > 5MB
         
         if (useChunkedDownload && contentLength) {
-            const chunkSizeMB = parseInt(document.getElementById('chunkSize').value) || 5;
-            const concurrentChunks = parseInt(document.getElementById('concurrentChunks').value) || 3;
-            
             try {
                 // Start chunked download with progress tracking
-                const blobUrl = await downloadWithChunks(proxyUrl, contentLength, chunkSizeMB, concurrentChunks);
+                const blobUrl = await downloadWithChunks(
+                    proxyUrl, 
+                    contentLength, 
+                    networkConfig.chunkSize, 
+                    networkConfig.concurrentChunks
+                );
                 
                 if (blobUrl) {
                     currentDownload.blobUrl = blobUrl;
                     document.getElementById('saveButton').disabled = false;
-                    
-                    // We've removed the startImmediately option, so we'll just enable the save button
-                    // when download is complete
                 }
             } catch (error) {
                 if (!currentDownload.isPaused) {
                     console.error('Chunked download failed, falling back to regular download:', error);
+                    
+                    // Update config to reflect the change to direct download
+                    currentDownload.downloadConfig.useChunks = false;
+                    updateDownloadInfo();
+                    
                     alert('Chunked download failed. Trying direct download...');
                     window.open(proxyUrl, '_blank');
                 }
             }
         } else {
+            // Update config to reflect direct download
+            currentDownload.downloadConfig.useChunks = false;
+            updateDownloadInfo();
+            
             // For small files or when chunking is disabled, use direct download
             if (!contentLength) {
                 // If content length is unknown, just open in new tab
