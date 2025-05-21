@@ -528,7 +528,7 @@ async function startDownload() {
         const useChunkedDownload = document.getElementById('chunkDownload').checked && 
                                    contentLength > 5 * 1024 * 1024; // Only use chunks for files > 5MB
         
-        const startImmediately = document.getElementById('startImmediately').checked;
+        // Removed startImmediately check
         
         if (useChunkedDownload && contentLength) {
             const chunkSizeMB = parseInt(document.getElementById('chunkSize').value) || 5;
@@ -540,13 +540,10 @@ async function startDownload() {
                 
                 if (blobUrl) {
                     currentDownload.blobUrl = blobUrl;
+                    document.getElementById('saveButton').disabled = false;
                     
-                    // Trigger immediate download if requested
-                    if (startImmediately) {
-                        saveDownload();
-                    } else {
-                        document.getElementById('saveButton').disabled = false;
-                    }
+                    // We've removed the startImmediately option, so we'll just enable the save button
+                    // when download is complete
                 }
             } catch (error) {
                 if (!currentDownload.isPaused) {
