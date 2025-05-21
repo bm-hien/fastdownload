@@ -21,32 +21,7 @@
             <button onclick="startDownload()">Tải xuống</button>
         </div>
         
-        <div class="option-title" onclick="toggleAdvancedOptions()">
-            <span>Tùy chọn nâng cao</span>
-            <span id="optionsToggle">▼</span>
-        </div>
-        
-        <div id="advancedOptions" class="advanced-options">
-            <div class="option-content">
-                <div class="option-item">
-                    <input type="checkbox" id="chunkDownload" checked>
-                    <label for="chunkDownload">Tải theo đoạn (tăng tốc)</label>
-                </div>
-                <div class="option-item">
-                    <input type="number" id="chunkSize" value="5" min="1" max="20" style="width: 60px">
-                    <label for="chunkSize">Kích thước đoạn (MB)</label>
-                </div>
-                <div class="option-item">
-                    <input type="number" id="concurrentChunks" value="3" min="1" max="10" style="width: 60px">
-                    <label for="concurrentChunks">Số luồng song song</label>
-                </div>
-                <div class="option-item">
-                    <input type="checkbox" id="useHttp3" checked>
-                    <label for="useHttp3">Sử dụng HTTP/3 (QUIC)</label>
-                </div>
-                <!-- Removed the startImmediately option -->
-            </div>
-        </div>
+        <!-- Removed advanced options section -->
 
         <div id="downloadCard" class="download-card">
             <div class="file-info">
@@ -101,8 +76,8 @@
                         <td id="startTime">...</td>
                     </tr>
                     <tr>
-                        <td>Chunks đã tải:</td>
-                        <td id="chunksProgress">0/0</td>
+                        <td>Cấu hình tải:</td>
+                        <td id="downloadConfig">...</td>
                     </tr>
                 </table>
             </div>
