@@ -44,6 +44,10 @@
                     <input type="checkbox" id="useHttp3" checked>
                     <label for="useHttp3">Sử dụng HTTP/3 (QUIC)</label>
                 </div>
+                <div class="option-item">
+                    <input type="checkbox" id="startImmediately" checked>
+                    <label for="startImmediately">Tải xuống ngay lập tức</label>
+                </div>
             </div>
         </div>
 
@@ -75,6 +79,35 @@
                     <div id="timeRemaining" class="stat-value">--:--</div>
                     <div class="stat-label">Thời gian còn lại</div>
                 </div>
+            </div>
+            
+            <div class="download-controls">
+                <button id="pauseButton" class="control-button" onclick="pauseDownload()">Tạm dừng</button>
+                <button id="resumeButton" class="control-button" onclick="resumeDownload()" disabled>Tiếp tục</button>
+                <button id="cancelButton" class="control-button" onclick="cancelDownload()">Hủy</button>
+                <button id="saveButton" class="control-button primary" onclick="saveDownload()">Lưu file</button>
+            </div>
+            
+            <div id="downloadInfo" class="download-info">
+                <h4>Thông tin chi tiết</h4>
+                <table>
+                    <tr>
+                        <td>Loại file:</td>
+                        <td id="fileType">...</td>
+                    </tr>
+                    <tr>
+                        <td>Máy chủ:</td>
+                        <td id="serverInfo">...</td>
+                    </tr>
+                    <tr>
+                        <td>Thời điểm bắt đầu:</td>
+                        <td id="startTime">...</td>
+                    </tr>
+                    <tr>
+                        <td>Chunks đã tải:</td>
+                        <td id="chunksProgress">0/0</td>
+                    </tr>
+                </table>
             </div>
         </div>
     </div>
