@@ -166,39 +166,7 @@ button:disabled {
     color: #64748b;
 }
 
-.advanced-options {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #f1f5f9;
-    border-radius: 0.5rem;
-    display: none;
-}
-
-.option-title {
-    font-weight: 500;
-    color: #334155;
-    margin-bottom: 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    cursor: pointer;
-}
-
-.option-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.option-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.option-item label {
-    font-size: 0.9rem;
-    color: #475569;
-}
+/* Removed advanced options styling */
 
 .download-controls {
     display: grid;
@@ -278,10 +246,6 @@ button:disabled {
     }
 
     .stats {
-        grid-template-columns: 1fr;
-    }
-    
-    .option-content {
         grid-template-columns: 1fr;
     }
     
