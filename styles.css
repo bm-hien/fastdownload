@@ -2,6 +2,7 @@
     --primary: #4f46e5;
     --success: #22c55e;
     --error: #ef4444;
+    --warning: #f59e0b;
 }
 
 body {
@@ -73,6 +74,11 @@ button:hover {
     background: #4338ca;
 }
 
+button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
 .download-card {
     display: none;
     background: #f8fafc;
@@ -129,11 +135,16 @@ button:hover {
     transition: width 0.3s ease;
 }
 
+.progress.paused {
+    background: var(--warning);
+}
+
 .stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     text-align: center;
+    margin-bottom: 1.5rem;
 }
 
 .stat-item {
@@ -189,6 +200,73 @@ button:hover {
     color: #475569;
 }
 
+.download-controls {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.control-button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 0.375rem;
+}
+
+.control-button.primary {
+    background-color: var(--success);
+}
+
+.control-button.primary:hover {
+    background-color: #16a34a;
+}
+
+#pauseButton {
+    background-color: var(--warning);
+}
+
+#pauseButton:hover {
+    background-color: #d97706;
+}
+
+#cancelButton {
+    background-color: var(--error);
+}
+
+#cancelButton:hover {
+    background-color: #dc2626;
+}
+
+.download-info {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.download-info h4 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: #334155;
+    font-size: 1rem;
+}
+
+.download-info table {
+    width: 100%;
+    font-size: 0.875rem;
+    border-collapse: collapse;
+}
+
+.download-info table td {
+    padding: 0.375rem 0;
+    color: #475569;
+}
+
+.download-info table td:first-child {
+    font-weight: 500;
+    width: 40%;
+}
+
 @media (max-width: 640px) {
     .container {
         margin: 1rem;
@@ -205,5 +283,10 @@ button:hover {
     
     .option-content {
         grid-template-columns: 1fr;
+    }
+    
+    .download-controls {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
     }
 }
